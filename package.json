@@ -1,0 +1,19 @@
+{
+  "name": "sweetbloom-cake-shop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ระบบจัดการร้านเค้กแบบใช้งานในเครื่องเดียว",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test",
+    "check": "node --check server.mjs && node --check src/store.mjs && node --check public/app.js",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f app"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "SweetBloom Cake Shop",
+  "short_name": "SweetBloom",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf7",
+  "theme_color": "#4d1430",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

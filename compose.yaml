@@ -1,0 +1,34 @@
+name: sweetbloom
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sweetbloom-app
+    restart: unless-stopped
+    init: true
+    ports:
+      - "4173:4173"
+    environment:
+      NODE_ENV: production
+      PORT: 4173
+      HOST: 0.0.0.0
+      STAFF_PIN: ${STAFF_PIN:-2468}
+      PROMPTPAY_ID: ${PROMPTPAY_ID:-}
+    volumes:
+      - sweetbloom-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4173/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  sweetbloom-data:
+    name: sweetbloom-data

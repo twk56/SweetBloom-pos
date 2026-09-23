@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#4d1430">
+  <meta name="description" content="ระบบสั่งเค้กและจัดการร้าน SweetBloom">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <title>SweetBloom Cake Shop</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="SweetBloom หน้าแรก">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <span><strong>SweetBloom</strong><small>CAKE SHOP</small></span>
+    </a>
+    <nav class="role-nav" aria-label="เลือกหน้าจอ">
+      <button class="nav-button active" data-view="shop">หน้าร้าน</button>
+      <button class="nav-button" data-view="kitchen">ครัว <span class="badge" id="kitchenBadge">0</span></button>
+      <button class="nav-button" data-view="cashier">แคชเชียร์</button>
+      <button class="nav-button" data-view="admin">จัดการร้าน</button>
+    </nav>
+    <div class="staff-tools"><button class="text-button" id="logoutStaff" hidden>ออกจากระบบ</button><div class="live-indicator"><span></span> เชื่อมต่อแล้ว</div></div>
+  </header>
+
+  <main>
+    <section id="shopView" class="view active">
+      <div class="hero">
+        <img src="/assets/strawberry-cake.png" alt="สตรอว์เบอร์รีชอร์ตเค้กของร้าน SweetBloom">
+        <div class="hero-shade"></div>
+        <div class="hero-copy">
+          <p class="eyebrow">อบสดทุกวัน • จำนวนจำกัด</p>
+          <h1>ความสุขชิ้นพอดีคำ</h1>
+          <p>เลือกเค้กที่ชอบ แล้วส่งออเดอร์ถึงครัวได้เลย</p>
+          <button class="primary light" id="browseMenu">ดูเมนูวันนี้</button>
+        </div>
+      </div>
+
+      <div class="shop-layout" id="menuSection">
+        <section>
+          <div class="section-head">
+            <div><p class="eyebrow dark">เมนูวันนี้</p><h2>เค้กและเครื่องดื่ม</h2></div>
+            <div class="filters" id="categoryFilters" aria-label="กรองหมวดหมู่"></div>
+          </div>
+          <div class="menu-grid" id="menuGrid" aria-live="polite"></div>
+        </section>
+
+        <aside class="cart-panel" aria-label="ตะกร้าสินค้า">
+          <div class="cart-title"><div><p class="eyebrow dark">ออเดอร์ของคุณ</p><h2>ตะกร้า</h2></div><span id="cartCount">0 รายการ</span></div>
+          <div id="cartItems" class="cart-items"></div>
+          <form id="orderForm" class="order-form">
+            <div class="field-row"><label>ชื่อลูกค้า<input name="customerName" maxlength="60" required placeholder="เช่น มิน"></label><label>เบอร์โทร<input name="phone" inputmode="tel" maxlength="16" required placeholder="0812345678"></label></div>
+            <div class="field-row">
+              <label>วิธีรับสินค้า<select name="orderType" id="orderType"><option value="PICKUP">รับที่หน้าร้าน</option><option value="DELIVERY">จัดส่ง</option></select></label>
+              <label>วันและเวลา<input name="fulfillmentAt" id="fulfillmentAt" type="datetime-local" required></label>
+            </div>
+            <label id="addressField" hidden>ที่อยู่จัดส่ง<textarea name="address" rows="3" maxlength="300" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"></textarea></label>
+            <label>วิธีชำระ<select name="paymentMethod" id="paymentMethod"><option value="PAY_AT_SHOP">ชำระตอนรับสินค้า</option><option value="TRANSFER" id="transferOption">โอน PromptPay</option></select></label>
+            <div class="totals"><span>ยอดก่อนภาษี</span><strong id="subtotal">฿0</strong><span>VAT 7%</span><strong id="tax">฿0</strong><span id="deliveryFeeLabel" hidden>ค่าจัดส่ง</span><strong id="deliveryFee" hidden>฿0</strong><span class="grand">ยอดสุทธิ</span><strong class="grand" id="total">฿0</strong></div>
+            <button class="primary full" type="submit" id="submitOrder">ส่งออเดอร์เข้าครัว</button>
+          </form>
+        </aside>
+      </div>
+      <section class="tracking" id="trackingPanel" hidden></section>
+    </section>
+
+    <section id="kitchenView" class="view workspace">
+      <div class="workspace-head"><div><p class="eyebrow dark">Kitchen Display</p><h1>คิวครัว</h1><p>เรียงจากรายการที่เข้าก่อน แตะปุ่มเพื่อเลื่อนไปสถานะถัดไป</p></div><time id="clock"></time></div>
+      <div class="kanban" id="kitchenBoard"></div>
+    </section>
+
+    <section id="cashierView" class="view workspace">
+      <div class="workspace-head"><div><p class="eyebrow dark">Point of Sale</p><h1>รับชำระเงิน</h1><p>ตรวจยอดก่อนบันทึก ระบบจะป้องกันการชำระซ้ำ</p></div><div class="metric"><span>รอชำระ</span><strong id="unpaidCount">0</strong></div></div>
+      <div class="cashier-grid" id="cashierGrid"></div>
+    </section>
+
+    <section id="adminView" class="view workspace">
+      <div class="workspace-head"><div><p class="eyebrow dark">Owner Dashboard</p><h1>ภาพรวมร้าน</h1><p>ยอดขาย คิว และสต็อกอัปเดตทันทีจากทุกหน้าจอ</p></div><div class="head-actions"><a class="secondary button-link" href="/api/reports/orders.csv" download>ดาวน์โหลด CSV</a><button class="secondary danger" id="resetDemo">รีเซ็ตข้อมูลทดลอง</button></div></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="admin-grid">
+        <section class="surface"><div class="surface-head"><h2>จัดการเมนู</h2><button class="secondary" id="openMenuForm">+ เพิ่มเมนู</button></div><div class="menu-table" id="adminMenu"></div></section>
+        <section class="surface"><div class="surface-head"><h2>กิจกรรมล่าสุด</h2></div><div class="audit-list" id="auditList"></div></section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="menuDialog">
+    <form id="menuForm" method="dialog">
+      <div class="dialog-head"><div><p class="eyebrow dark">เมนูใหม่</p><h2>เพิ่มสินค้า</h2></div><button type="button" class="icon-button" data-close aria-label="ปิด">×</button></div>
+      <label>ชื่อเมนู<input name="name" required maxlength="80"></label>
+      <label>หมวดหมู่<input name="category" required maxlength="40" value="เค้กชิ้น"></label>
+      <div class="field-row"><label>ราคา<input name="price" type="number" min="1" step="0.01" required></label><label>สต็อก<input name="stock" type="number" min="0" step="1" required></label></div>
+      <button class="primary full" type="submit">บันทึกเมนู</button>
+    </form>
+  </dialog>
+  <dialog id="staffDialog">
+    <form id="staffForm">
+      <div class="dialog-head"><div><p class="eyebrow dark">Staff Access</p><h2>เข้าสู่ระบบพนักงาน</h2></div><button type="button" class="icon-button" data-staff-close aria-label="ปิด">×</button></div>
+      <p class="dialog-copy">กรอก PIN เพื่อเปิดหน้าครัว แคชเชียร์ และจัดการร้าน</p>
+      <label>PIN พนักงาน<input name="pin" type="password" inputmode="numeric" autocomplete="current-password" required maxlength="12"></label>
+      <button class="primary full" type="submit">เข้าสู่ระบบ</button>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
