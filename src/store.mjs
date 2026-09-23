@@ -154,6 +154,16 @@ export class CakeStore {
     });
   }
 
+  async setOrderAiReview(orderId, review) {
+    return this.transact((state) => {
+      const order = findOrder(state, orderId);
+      order.aiReview = review;
+      order.updatedAt = new Date().toISOString();
+      addAudit(state, 'JEV_ORDER_REVIEWED', order.id, `${review.priority}:${review.confidence}`);
+      return order;
+    });
+  }
+
   async cancelOrder(orderId, trackingToken, actor = 'CUSTOMER') {
     return this.transact((state) => {
       const order = findOrder(state, orderId);

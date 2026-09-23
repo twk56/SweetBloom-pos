@@ -158,12 +158,20 @@ function renderKitchen() {
     return `<section class="lane"><div class="lane-head"><h2>${title}</h2><span>${orders.length}</span></div>${orders.length ? orders.map((order) => ticket(order, action)).join('') : '<div class="empty">ไม่มีคิว</div>'}</section>`;
   }).join('');
   document.querySelectorAll('[data-next-status]').forEach((button) => button.addEventListener('click', () => updateStatus(button.dataset.orderId, button.dataset.nextStatus)));
+  document.querySelectorAll('[data-ai-review]').forEach((button) => button.addEventListener('click', () => reviewWithJev(button.dataset.aiReview)));
 }
 
 function ticket(order, action) {
   const next = { NEW: 'CONFIRMED', CONFIRMED: 'BAKING', BAKING: 'READY', READY: 'COMPLETED' }[order.status];
   const disabled = next === 'COMPLETED' && order.paymentStatus !== 'PAID';
-  return `<article class="ticket ${order.status === 'READY' ? 'ready' : ''}"><div class="ticket-top"><h3>${order.orderNo}</h3><time>${age(order.createdAt)}</time></div><small>${escapeHtml(order.customerName)} · ${escapeHtml(order.phone)} · ${order.orderType === 'DELIVERY' ? 'จัดส่ง' : 'รับหน้าร้าน'} · ${formatDate(order.fulfillmentAt)}</small><ul>${order.items.map((item) => `<li>${item.quantity}× ${escapeHtml(item.name)}${item.note ? ` — ${escapeHtml(item.note)}` : ''}</li>`).join('')}</ul>${order.address ? `<p>${escapeHtml(order.address)}</p>` : ''}<button class="primary" data-order-id="${order.id}" data-next-status="${next}" ${disabled ? 'disabled title="รอชำระเงิน"' : ''}>${disabled ? 'รอชำระก่อนส่งมอบ' : action}</button></article>`;
+  const ai = order.aiReview;
+  const jev = ai ? `<div class="jev-review"><strong>Jev: ${escapeHtml(ai.priority || 'ตรวจแล้ว')}</strong><span>ความซับซ้อน ${escapeHtml(ai.complexity ?? '-')} / 10</span></div>` : `<button class="jev-button" data-ai-review="${order.id}" ${state.data.settings.jevEnabled ? '' : 'disabled title="ตั้งค่า JEV_AI_API_KEY ก่อน"'}>${state.data.settings.jevEnabled ? 'วิเคราะห์ด้วย Jev' : 'Jev ยังไม่เชื่อม'}</button>`;
+  return `<article class="ticket ${order.status === 'READY' ? 'ready' : ''}"><div class="ticket-top"><h3>${order.orderNo}</h3><time>${age(order.createdAt)}</time></div><small>${escapeHtml(order.customerName)} · ${escapeHtml(order.phone)} · ${order.orderType === 'DELIVERY' ? 'จัดส่ง' : 'รับหน้าร้าน'} · ${formatDate(order.fulfillmentAt)}</small><ul>${order.items.map((item) => `<li>${item.quantity}× ${escapeHtml(item.name)}${item.note ? ` — ${escapeHtml(item.note)}` : ''}</li>`).join('')}</ul>${order.address ? `<p>${escapeHtml(order.address)}</p>` : ''}${jev}<button class="primary" data-order-id="${order.id}" data-next-status="${next}" ${disabled ? 'disabled title="รอชำระเงิน"' : ''}>${disabled ? 'รอชำระก่อนส่งมอบ' : action}</button></article>`;
+}
+
+async function reviewWithJev(orderId) {
+  try { await api(`/api/orders/${orderId}/ai-review`, { method: 'POST' }); toast('Jev วิเคราะห์ออเดอร์แล้ว'); await load(); }
+  catch (error) { toast(error.message); }
 }
 
 async function updateStatus(orderId, status) {
@@ -291,7 +299,7 @@ function age(date) {
 }
 
 function auditText(entry) {
-  const labels = { ORDER_CREATED: 'สร้างออเดอร์ใหม่', ORDER_STATUS_CHANGED: 'อัปเดตสถานะออเดอร์', PAYMENT_CAPTURED: 'บันทึกการชำระเงิน', MENU_CREATED: 'เพิ่มเมนู', MENU_UPDATED: 'แก้ไขเมนู' };
+  const labels = { ORDER_CREATED: 'สร้างออเดอร์ใหม่', ORDER_STATUS_CHANGED: 'อัปเดตสถานะออเดอร์', PAYMENT_CAPTURED: 'บันทึกการชำระเงิน', MENU_CREATED: 'เพิ่มเมนู', MENU_UPDATED: 'แก้ไขเมนู', JEV_ORDER_REVIEWED: 'Jev วิเคราะห์ออเดอร์' };
   return `${labels[entry.action] || entry.action} · ${escapeHtml(entry.detail || '')}`;
 }
 

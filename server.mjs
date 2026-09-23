@@ -4,6 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { CakeStore } from './src/store.mjs';
+import { reviewOrderWithJev } from './src/jev.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(root, 'public');
@@ -12,6 +13,7 @@ const clients = new Set();
 const sessions = new Map();
 const staffPin = process.env.STAFF_PIN || '2468';
 const promptPayId = String(process.env.PROMPTPAY_ID || '').trim();
+const jevApiKey = String(process.env.JEV_AI_API_KEY || '').trim();
 await store.init();
 
 const mime = {
@@ -34,7 +36,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/auth' && req.method === 'DELETE') return logout(req, res);
     if (url.pathname === '/api/state' && req.method === 'GET') {
       const snapshot = store.snapshot();
-      return json(res, 200, isStaff(req) ? summarize(snapshot) : publicState(snapshot, url));
+      return json(res, 200, isStaff(req) ? staffState(snapshot) : publicState(snapshot, url));
     }
     if (url.pathname === '/api/reports/orders.csv' && req.method === 'GET') {
       requireStaff(req);
@@ -46,7 +48,8 @@ const server = http.createServer(async (req, res) => {
       if (input.paymentMethod === 'TRANSFER' && !promptPayId) throw Object.assign(new Error('ร้านยังไม่ได้ตั้งค่า PromptPay'), { status: 400 });
       const order = await store.createOrder(input);
       broadcast('state');
-      return json(res, 201, order);
+      scheduleAiReview(order.id);
+      return json(res, 201, { ...order, idempotencyKey: undefined });
     }
 
     const cancelMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/cancel$/);
@@ -71,6 +74,18 @@ const server = http.createServer(async (req, res) => {
       const payment = await store.payOrder(paymentMatch[1], await body(req));
       broadcast('state');
       return json(res, 201, payment);
+    }
+
+    const aiReviewMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/ai-review$/);
+    if (aiReviewMatch && req.method === 'POST') {
+      requireStaff(req);
+      if (!jevApiKey) throw Object.assign(new Error('ยังไม่ได้ตั้งค่า JEV_AI_API_KEY'), { status: 503 });
+      const order = store.snapshot().orders.find((entry) => entry.id === aiReviewMatch[1]);
+      if (!order) throw Object.assign(new Error('ไม่พบออเดอร์'), { status: 404 });
+      const review = await reviewOrderWithJev(order, { apiKey: jevApiKey });
+      await store.setOrderAiReview(order.id, review);
+      broadcast('state');
+      return json(res, 200, review);
     }
 
     if (url.pathname === '/api/menu' && req.method === 'POST') {
@@ -117,10 +132,17 @@ function summarize(state) {
   };
 }
 
+function staffState(state) {
+  const result = summarize(state);
+  result.settings.jevEnabled = Boolean(jevApiKey);
+  return result;
+}
+
 function publicState(state, url) {
   const orderId = url.searchParams.get('orderId');
   const trackingToken = url.searchParams.get('trackingToken');
   const order = state.orders.find((entry) => entry.id === orderId && entry.trackingToken === trackingToken);
+  const safeOrder = order ? (({ idempotencyKey, trackingToken: _trackingToken, aiReview, ...rest }) => rest)(order) : null;
   return {
     settings: {
       shopName: state.settings.shopName,
@@ -131,11 +153,21 @@ function publicState(state, url) {
       promptPayId: order?.paymentMethod === 'TRANSFER' ? promptPayId : ''
     },
     menu: state.menu.filter((item) => item.available),
-    orders: order ? [order] : [],
+    orders: safeOrder ? [safeOrder] : [],
     payments: [],
     audit: [],
     summary: { salesToday: 0, paidOrders: 0, openOrders: 0, lowStock: 0 }
   };
+}
+
+function scheduleAiReview(orderId) {
+  if (!jevApiKey) return;
+  const order = store.snapshot().orders.find((entry) => entry.id === orderId);
+  if (!order) return;
+  reviewOrderWithJev(order, { apiKey: jevApiKey })
+    .then((review) => store.setOrderAiReview(orderId, review))
+    .then(() => broadcast('state'))
+    .catch((error) => console.error('Jev review failed:', error.message));
 }
 
 async function login(req, res) {

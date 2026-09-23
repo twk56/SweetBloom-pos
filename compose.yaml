@@ -16,6 +16,7 @@ services:
       HOST: 0.0.0.0
       STAFF_PIN: ${STAFF_PIN:-2468}
       PROMPTPAY_ID: ${PROMPTPAY_ID:-}
+      JEV_AI_API_KEY: ${JEV_AI_API_KEY:-}
     volumes:
       - sweetbloom-data:/app/data
     healthcheck:
