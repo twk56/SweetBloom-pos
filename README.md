@@ -53,7 +53,7 @@ docker compose ps
 5. ตรวจชื่อร้าน ราคา สต็อก ค่าจัดส่ง ภาษี และข้อมูลใบเสร็จให้ตรงกับกิจการ
 6. หากเปิดให้อินเทอร์เน็ตภายนอกเข้าถึง ต้องวางหลัง HTTPS reverse proxy และสำรอง volume `sweetbloom-data` เป็นประจำ
 
-Codex เชื่อมผ่าน MCP server `mcp/jev-mcp-server.mjs` และอ่าน API key จาก environment variable `JEV_AI_API_KEY` เท่านั้น หลังตั้งค่า key ให้ปิดแล้วเปิด Codex ใหม่ เครื่องมือ `jev_decide` และ `jev_order_priority` จะพร้อมใช้งาน
+Jev เชื่อมตรงจาก backend ผ่าน REST API และอ่าน key จาก `JEV_AI_API_KEY` เท่านั้น
 
 ตัวแปรใน `.env`:
 
@@ -63,6 +63,19 @@ Codex เชื่อมผ่าน MCP server `mcp/jev-mcp-server.mjs` แล�
 | `PROMPTPAY_ID` | หมายเลข PromptPay ของร้าน |
 | `JEV_AI_API_KEY` | เปิดวิเคราะห์ลำดับออเดอร์ด้วย Jev |
 | `PORT` | พอร์ตภายในแอป ค่าเริ่มต้น `4173` |
+
+## โครงสร้างไฟล์
+
+```text
+public/                  หน้าเว็บและไฟล์ที่ browser ใช้งาน
+  assets/images/         รูปภาพ แยกเป็น hero และ products
+src/                     business logic, การเก็บข้อมูล และ Jev API
+test/                    automated tests
+server.mjs               HTTP server และ API routes
+compose.yaml             การตั้งค่า Docker Compose
+Dockerfile               image สำหรับ production
+*.bat                    ตัวช่วยเริ่ม/หยุดระบบบน Windows
+```
 
 ระบบปัจจุบันรองรับการบันทึกการชำระและตรวจยอดโดยพนักงาน แต่ยังไม่ได้เชื่อม Payment Gateway หรือออกใบกำกับภาษีอิเล็กทรอนิกส์อัตโนมัติ
 

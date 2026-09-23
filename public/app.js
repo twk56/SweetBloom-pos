@@ -49,9 +49,15 @@ function renderFilters() {
 
 function renderMenu() {
   const menu = state.data.menu.filter((item) => state.category === 'ทั้งหมด' || item.category === state.category);
+  const productImages = {
+    'cake-strawberry': '/assets/images/hero/strawberry-cake.png',
+    'cake-chocolate': '/assets/images/products/chocolate-ganache.png',
+    'cake-matcha': '/assets/images/products/matcha-cake.png',
+    'cake-blueberry': '/assets/images/products/blueberry-cheesecake.png'
+  };
   document.querySelector('#menuGrid').innerHTML = menu.map((item) => `
     <article class="menu-card">
-      <div class="menu-art" style="--card:${item.color}"><span class="cake-icon" aria-hidden="true">${item.category === 'เครื่องดื่ม' ? '🥤' : '🍰'}</span></div>
+      <div class="menu-art" style="--card:${item.color}">${productImages[item.id] ? `<img src="${productImages[item.id]}" alt="${escapeHtml(item.name)}" loading="lazy">` : `<span class="cake-icon" aria-hidden="true">${item.category === 'เครื่องดื่ม' ? '🥤' : '🍰'}</span>`}</div>
       <div class="menu-body">
         <div class="menu-meta"><span>${escapeHtml(item.category)}</span><span>${item.available && item.stock > 0 ? `เหลือ ${item.stock}` : 'หมด'}</span></div>
         <h3>${escapeHtml(item.name)}</h3>
