@@ -271,7 +271,7 @@ function securityHeaders() {
 }
 
 const port = Number(process.env.PORT || 4173);
-const host = process.env.HOST || '0.0.0.0';
+const host = process.env.HOST || '::';
 server.listen(port, host, () => {
   console.log(`SweetBloom พร้อมใช้งานที่ http://localhost:${port}`);
 });
